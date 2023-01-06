@@ -1,7 +1,9 @@
 const User = require(`./userModel`);
+const jwt = require('jsonwebtoken')
 exports.createUser = async (req, res) => {
+    let userReq = req
     try {
-        const newUser = await User.create(req.body);
+        const newUser = await User.create(userReq.body);
         res.status(201).send({username: newUser.username});
     } catch (error) {
         console.log(error);
@@ -41,13 +43,20 @@ exports.deleteUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
     console.log("middleware passed and controller  has been called")
     try {
+        if (req.authUser) {
+            console.log("token check passed and continue to persistent login")
+            res.status(200).send({username: req.authUser.username})
+            return
+        }
         const user = await User.findOne({username: req.body.username});
         console.log(user);
         console.log("username found in our database");
-        res.status(200).send({username: user.username, message: "login successful"})
+        const token = await jwt.sign({_id: user._id }, process.env.SECRET);
+        console.log(token);
+        res.status(200).send({username: user.username, message: "login successful", token});
     } catch (error) {
         console.log(error);
-        console.log("username not found")
-        res.status(500).send({error: error.message})
+        console.log("username not found");
+        res.status(500).send({error: error.message});
     }
 }
